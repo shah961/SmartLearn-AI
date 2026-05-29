@@ -1,0 +1,12 @@
+kind = "web"
+previewPath = "/"
+title = "Flask App"
+version = "1.0.0"
+
+[[services]]
+localPort = 8000
+name = "Flask App"
+paths = ["/"]
+
+[services.development]
+run = "python3 artifacts/flask-app/app.py"
