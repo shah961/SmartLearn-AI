@@ -1,141 +1,369 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request
+from google import genai
+import os
+import markdown
 
 app = Flask(__name__)
 
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-@app.route("/")
-def index():
-    return """
+# Shared HTML Header to avoid repeating CSS styles
+HTML_HEADER = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Flask App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLearn AI Agent</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #f8f9fa;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #333;
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
         }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-            padding: 48px 56px;
-            max-width: 520px;
             width: 100%;
+            max-width: 600px;
+            margin-top: 40px;
             text-align: center;
         }
-        .logo {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
+
         h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #111;
-        }
-        p {
-            color: #666;
-            font-size: 15px;
-            line-height: 1.6;
-            margin-bottom: 28px;
-        }
-        .badge {
-            display: inline-block;
-            background: #e8f5e9;
-            color: #2e7d32;
-            font-size: 13px;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 99px;
-            margin-bottom: 32px;
-        }
-        .routes {
-            text-align: left;
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px 24px;
-        }
-        .routes h2 {
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #888;
-            margin-bottom: 14px;
-        }
-        .route {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            color: var(--primary);
+            font-size: 2.2rem;
             margin-bottom: 10px;
-            font-size: 14px;
+            font-weight: 800;
         }
-        .method {
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 4px;
-            background: #dbeafe;
-            color: #1d4ed8;
-            flex-shrink: 0;
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 30px;
         }
-        .method.post { background: #fef9c3; color: #854d0e; }
-        code {
-            font-family: "SF Mono", "Fira Mono", monospace;
-            font-size: 13px;
-            color: #333;
+
+        /* Form & Input Styles */
+        .search-box {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #334155;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 2px solid #334155;
+            background-color: #0f172a;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        select {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 2px solid #334155;
+            background-color: #0f172a;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+        }
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: #0f172a;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* AI Content Formatting (Markdown Output) */
+        .content-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            text-align: left;
+            margin-top: 20px;
+            border: 1px solid #334155;
+            line-height: 1.7;
+        }
+
+        .content-card h1, .content-card h2, .content-card h3 {
+            color: var(--primary);
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .content-card p {
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+
+        .content-card ul, .content-card ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+
+        .content-card li {
+            margin-bottom: 8px;
+        }
+
+        /* Code block styling for mobile */
+        .content-card pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border: 1px solid #334155;
+        }
+
+        .content-card code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 25px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">🐍</div>
-        <h1>Flask App</h1>
-        <p>Your Python Flask server is up and running.</p>
-        <div class="badge">&#10003; Running</div>
-        <div class="routes">
-            <h2>Available Routes</h2>
-            <div class="route">
-                <span class="method">GET</span>
-                <code>/</code> &mdash; this page
-            </div>
-            <div class="route">
-                <span class="method">GET</span>
-                <code>/api/hello</code> &mdash; JSON greeting
-            </div>
-            <div class="route">
-                <span class="method post">POST</span>
-                <code>/api/echo</code> &mdash; echo JSON body
-            </div>
-        </div>
-    </div>
-</body>
-</html>
 """
 
+@app.route("/")
+def home():
+    return f"""
+    {HTML_HEADER}
+    <body>
+        <div class="container">
+            <h1>SmartLearn AI 🚀</h1>
+            <p class="subtitle">Your pocket-sized personal tutor</p>
 
-@app.route("/api/hello")
-def hello():
-    name = request.args.get("name", "World")
-    return jsonify({"message": f"Hello, {name}!", "status": "ok"})
+            <div class="search-box">
+                <form action="/ask" method="get">
+                    <input
+                        type="text"
+                        name="question"
+                        placeholder="What do you want to learn today?"
+                        required
+                        autofocus
+                    >
+                    <select name="subject" required>
+    <option value="" disabled selected>Select Subject</option>
+    <option value="General">General</option>
+    <option value="Programming">Programming</option>
+    <option value="Mathematics">Mathematics</option>
+    <option value="Physics">Physics</option>
+    <option value="Chemistry">Chemistry</option>
+    <option value="Biology">Biology</option>
+</select>
+
+<br><br>
+
+<select name="difficulty" required>
+   <option value="" disabled selected>Select Difficulty</option>
+    <option value="Beginner">Beginner</option>
+    <option value="Intermediate">Intermediate</option>
+    <option value="Advanced">Advanced</option>
+</select>
+
+<br><br>
+                    <button type="submit">
+                        Ask AI Partner
+                    </button>
+                </form>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
 
-@app.route("/api/echo", methods=["POST"])
-def echo():
-    data = request.get_json(silent=True) or {}
-    return jsonify({"echo": data, "status": "ok"})
+@app.route("/ask")
+def ask():
+    question = request.args.get("question")
+    if not question or not question.strip():
+        return """
+        <h1>Error</h1>
+        <p>Please enter a topic.</p>
+        """
+    subject = request.args.get("subject")
+    difficulty = request.args.get("difficulty")
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"""
+            You are SmartLearn AI Agent.
+
+            Subject: {subject}
+
+            Difficulty Level: {difficulty}
+
+            Topic: {question}
+
+            Teach according to the selected difficulty level.
+
+            Beginner:
+            - Very simple language
+            - Everyday examples
+            - Diagrams and Formulas (if needed) Explain them also
+            Intermediate:
+            - More details
+            - Some technical terms
+            - Diagrams and Formulas (if needed) Explain them also
+
+            Advanced:
+            - Deep explanation
+            - Professional terminology
+             - Diagrams and Formulas (if needed) Explain them also
+
+            Provide:
+
+            1. Simple Short Explanation
+            2. Key Points (bullet list)
+            3. Three Quiz Questions
+            4. A 30-minute Study Plan
+            5. Three Flashcards
+
+            Format exactly like:
+
+            Flashcard 1
+            Question: ...?
+            Answer: ...
+
+            Flashcard 2
+            Question: ...?
+            Answer: ...
+
+            Flashcard 3
+            Question: ...?
+            Answer: ...
+            
+            
+            6. Revision Notes
+
+            Provide a very short summary of the topic in 5 lines.
+            
+            Make the answer easy to understand.
+            
+Use simple language.
+Avoid unnecessary jargon.
+
+            """
+        )
+
+    except Exception as e:
+        return f"""
+        {HTML_HEADER}
+        <body>
+            <div class="container">
+                <h1>⚠️ Error</h1>
+                <div class="content-card">
+                    <p>Something went wrong while contacting the AI.</p>
+                    <p>{str(e)}</p>
+                </div>
+                <a href="/" class="back-link">← Try Again</a>
+            </div>
+        </body>
+        </html>
+        """
+
+    html_response = markdown.markdown(
+        response.text,
+        extensions=["extra"]
+    )
+
+    return f"""
+    {HTML_HEADER}
+    <body>
+        <div class="container">
+            <h1>SmartLearn AI 🚀</h1>
+<p class="subtitle">
+Subject: {subject} | Level: {difficulty}
+</p>
+            <div class="content-card">
+                {html_response}
+            </div>
+
+            <a href="/" class="back-link">
+                ← Teach me something else
+            </a>
+        </div>
+    </body>
+    </html>
+    """
+
+
+@app.route("/study")
+def study():
+    return f"""
+    {HTML_HEADER}
+    <body>
+        <div class="container">
+            <h1>Study Route Working 📚</h1>
+            <p class="subtitle">AI features are now being added...</p>
+            
+            <a href="/" class="back-link">← Go Back</a>
+        </div>
+    </body>
+    </html>
+    """
 
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=8000)
