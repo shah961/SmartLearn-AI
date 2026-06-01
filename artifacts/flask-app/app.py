@@ -5,7 +5,12 @@ import markdown
 
 app = Flask(__name__)
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY not found")
+
+client = genai.Client(api_key=API_KEY)
 
 # Shared HTML Header to avoid repeating CSS styles
 HTML_HEADER = """
@@ -181,6 +186,37 @@ HTML_HEADER = """
         .back-link:hover {
             text-decoration: underline;
         }
+        .pdf-btn{
+            margin-bottom:15px;
+        }
+
+        @media print{
+            .pdf-btn,
+            .back-link{
+                display:none;
+            }
+        }
+        #loading{
+            text-align:center;
+            margin-top:15px;
+            color:#38bdf8;
+            font-weight:bold;
+        }
+        .content-card table{
+            width:100%;
+            border-collapse:collapse;
+            margin:15px 0;
+        }
+
+        .content-card th,
+        .content-card td{
+            border:1px solid #334155;
+            padding:10px;
+        }
+
+        .content-card th{
+            background:#0f172a;
+        }
     </style>
 </head>
 """
@@ -191,8 +227,11 @@ def home():
     {HTML_HEADER}
     <body>
         <div class="container">
-            <h1>SmartLearn AI 🚀</h1>
-            <p class="subtitle">Your pocket-sized personal tutor</p>
+            <h1>SmartLearn AI </h1>
+            <p class="subtitle">
+Learn Faster.
+Remember Longer.
+Study Smarter.</p>
 
             <div class="search-box">
                 <form action="/ask" method="get">
@@ -223,12 +262,32 @@ def home():
 </select>
 
 <br><br>
-                    <button type="submit">
-                        Ask AI Partner
-                    </button>
+
+<select name="goal" required>
+    <option value="" disabled selected>Select Goal</option>
+    <option value="Exam Preparation">Exam Preparation</option>
+    <option value="Quick Learning">Quick Learning</option>
+    <option value="Interview Prep">Interview Prep</option>
+    <option value="Revision">Revision</option>
+</select>
+
+<br><br>
+                    <button type="submit" id="askBtn">
+    Ask AI Partner
+</button>
                 </form>
+                <p id="loading" style="display:none;">
+⏳ Generating lesson...
+</p>
             </div>
         </div>
+        <script>
+document.querySelector("form").addEventListener("submit", function(){
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("askBtn").disabled = true;
+    document.getElementById("askBtn").innerText = "Generating...";
+});
+</script>
     </body>
     </html>
     """
@@ -244,6 +303,12 @@ def ask():
         """
     subject = request.args.get("subject")
     difficulty = request.args.get("difficulty")
+    goal = request.args.get("goal")
+    if not subject or not difficulty or not goal:
+        return """
+        <h1>Error</h1>
+        <p>Please complete all fields.</p>
+        """
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
@@ -253,6 +318,8 @@ def ask():
             Subject: {subject}
 
             Difficulty Level: {difficulty}
+
+            Learning Goal: {goal}
 
             Topic: {question}
 
@@ -304,10 +371,19 @@ def ask():
 Use simple language.
 Avoid unnecessary jargon.
 
+            Use proper markdown headings.
+
+            Use tables where useful.
+
+            Highlight important terms in bold.
+
+            Keep explanations structured and visually clean.
+
+            End with a motivational study tip.
             """
         )
 
-    except Exception as e:
+    except Exception:
         return f"""
         {HTML_HEADER}
         <body>
@@ -315,7 +391,7 @@ Avoid unnecessary jargon.
                 <h1>⚠️ Error</h1>
                 <div class="content-card">
                     <p>Something went wrong while contacting the AI.</p>
-                    <p>{str(e)}</p>
+                    <p>Please try again after a few seconds.</p>
                 </div>
                 <a href="/" class="back-link">← Try Again</a>
             </div>
@@ -323,22 +399,35 @@ Avoid unnecessary jargon.
         </html>
         """
 
+    response_text = getattr(response, "text", "")
+
+        if not response_text or not response_text.strip():
+        return """
+        <h1>Error</h1>
+        <p>No response received from AI.</p>
+        """
+
     html_response = markdown.markdown(
-        response.text,
+        response_text,
         extensions=["extra"]
     )
-
     return f"""
     {HTML_HEADER}
     <body>
         <div class="container">
             <h1>SmartLearn AI 🚀</h1>
 <p class="subtitle">
-Subject: {subject} | Level: {difficulty}
+Subject: {subject} | Level: {difficulty} | Goal: {goal}
 </p>
-            <div class="content-card">
-                {html_response}
-            </div>
+<div class="content-card">
+
+<button onclick="window.print()" class="pdf-btn">
+    📄 Save as PDF
+</button>
+
+{html_response}
+
+</div>
 
             <a href="/" class="back-link">
                 ← Teach me something else
@@ -366,4 +455,5 @@ def study():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
