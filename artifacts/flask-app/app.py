@@ -277,123 +277,135 @@ Study Smarter.</p>
 </button>
                 </form>
                 <p id="loading" style="display:none;">
-⏳ Generating lesson...
+🧠 AI is creating your lesson...
+This may take a few seconds.
 </p>
             </div>
         </div>
         <script>
-document.querySelector("form").addEventListener("submit", function(){
+document.querySelector("form").addEventListener("submit", function(){{
     document.getElementById("loading").style.display = "block";
     document.getElementById("askBtn").disabled = true;
     document.getElementById("askBtn").innerText = "Generating...";
-});
+}});
 </script>
     </body>
     </html>
     """
 
 
+            
 @app.route("/ask")
 def ask():
     question = request.args.get("question")
+    subject = request.args.get("subject")
+    difficulty = request.args.get("difficulty")
+    goal = request.args.get("goal")
+
     if not question or not question.strip():
         return """
         <h1>Error</h1>
         <p>Please enter a topic.</p>
         """
-    subject = request.args.get("subject")
-    difficulty = request.args.get("difficulty")
-    goal = request.args.get("goal")
+
     if not subject or not difficulty or not goal:
         return """
         <h1>Error</h1>
         <p>Please complete all fields.</p>
         """
+
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=f"""
-            You are SmartLearn AI Agent.
+You are SmartLearn AI Agent.
 
-            Subject: {subject}
+Subject: {subject}
+Difficulty Level: {difficulty}
+Learning Goal: {goal}
+Topic: {question}
 
-            Difficulty Level: {difficulty}
+Teach according to the selected difficulty level.
 
-            Learning Goal: {goal}
+Beginner:
+- Very simple language
+- Everyday examples
 
-            Topic: {question}
+Intermediate:
+- More details
+- Some technical terms
 
-            Teach according to the selected difficulty level.
+Advanced:
+- Deep explanation
+- Professional terminology
 
-            Beginner:
-            - Very simple language
-            - Everyday examples
-            - Diagrams and Formulas (if needed) Explain them also
-            Intermediate:
-            - More details
-            - Some technical terms
-            - Diagrams and Formulas (if needed) Explain them also
+Provide:
 
-            Advanced:
-            - Deep explanation
-            - Professional terminology
-             - Diagrams and Formulas (if needed) Explain them also
+# Short Explanation
 
-            Provide:
+# Key Points
 
-            1. Simple Short Explanation
-            2. Key Points (bullet list)
-            3. Three Quiz Questions
-            4. A 30-minute Study Plan
-            5. Three Flashcards
+# Quiz Questions
+(3 questions)
 
-            Format exactly like:
+# 30 Minute Study Plan
+# Knowledge Gap Analysis
 
-            Flashcard 1
-            Question: ...?
-            Answer: ...
+- Common mistakes
+- Difficult concepts
+- Recommended next topics
+# Flashcards
+Use proper markdown formatting.
 
-            Flashcard 2
-            Question: ...?
-            Answer: ...
+For flashcards use:
 
-            Flashcard 3
-            Question: ...?
-            Answer: ...
-            
-            
-            6. Revision Notes
+Flashcard 1
 
-            Provide a very short summary of the topic in 5 lines.
-            
-            Make the answer easy to understand.
-            
-Use simple language.
-Avoid unnecessary jargon.
+Question:
+...
 
-            Use proper markdown headings.
+Answer:
+...
 
-            Use tables where useful.
+Flashcard 2
 
-            Highlight important terms in bold.
+Question:
+...
 
-            Keep explanations structured and visually clean.
+Answer:
+...
 
-            End with a motivational study tip.
-            """
+# Revision Notes
+
+# Summary
+
+Give a short 5-line summary.
+
+Use markdown headings.
+Use tables when useful.
+Highlight important terms in bold.
+Keep the complete response under 600 words.
+Use concise explanations.
+Avoid long paragraphs.
+End with a motivational study tip.
+"""
         )
 
-    except Exception:
+    except Exception as e:
         return f"""
         {HTML_HEADER}
         <body>
             <div class="container">
                 <h1>⚠️ Error</h1>
+
                 <div class="content-card">
-                    <p>Something went wrong while contacting the AI.</p>
-                    <p>Please try again after a few seconds.</p>
+                    <p>Something went wrong while contacting Gemini.</p>
+                    <p>{str(e)}</p>
                 </div>
-                <a href="/" class="back-link">← Try Again</a>
+
+                <a href="/" class="back-link">
+                    ← Try Again
+                </a>
             </div>
         </body>
         </html>
@@ -401,7 +413,7 @@ Avoid unnecessary jargon.
 
     response_text = getattr(response, "text", "")
 
-        if not response_text or not response_text.strip():
+    if not response_text or not response_text.strip():
         return """
         <h1>Error</h1>
         <p>No response received from AI.</p>
@@ -411,28 +423,43 @@ Avoid unnecessary jargon.
         response_text,
         extensions=["extra"]
     )
+
     return f"""
     {HTML_HEADER}
     <body>
         <div class="container">
-            <h1>SmartLearn AI 🚀</h1>
-<p class="subtitle">
-Subject: {subject} | Level: {difficulty} | Goal: {goal}
-</p>
-<div class="content-card">
 
-<button onclick="window.print()" class="pdf-btn">
-    📄 Save as PDF
+            <h1>SmartLearn AI </h1>
+
+            <p class="subtitle">
+                Subject: {subject} |
+                Level: {difficulty} |
+                Goal: {goal}
+            </p>
+
+            <div class="content-card" id="studyContent">
+<button onclick="copyContent()" class="pdf-btn">
+📋 Copy Notes
 </button>
+                {html_response}
 
-{html_response}
-
-</div>
+            </div>
 
             <a href="/" class="back-link">
                 ← Teach me something else
             </a>
+
         </div>
+        <script>
+function copyContent() {{
+    const content =
+        document.getElementById("studyContent").innerText;
+
+    navigator.clipboard.writeText(content);
+
+    alert("Content copied!");
+}}
+</script>
     </body>
     </html>
     """
@@ -444,7 +471,7 @@ def study():
     {HTML_HEADER}
     <body>
         <div class="container">
-            <h1>Study Route Working 📚</h1>
+            <h1>Study Route Working </h1>
             <p class="subtitle">AI features are now being added...</p>
             
             <a href="/" class="back-link">← Go Back</a>
@@ -457,3 +484,4 @@ def study():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
+    
