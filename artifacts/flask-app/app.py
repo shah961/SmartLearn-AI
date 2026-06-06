@@ -304,6 +304,9 @@ Study Smarter.</p>
     <option value="Quick Learning">Quick Learning</option>
     <option value="Interview Prep">Interview Prep</option>
     <option value="Revision">Revision</option>
+    <option value="Research Mode">
+Research Mode
+</option>
 </select>
 
 <br><br>
@@ -357,15 +360,50 @@ def ask():
         """
 
     try:
+        extra_instruction = ""
+
+        if goal == "Research Mode":
+            extra_instruction = """
+# Research Agent Mode
+
+Act as:
+
+1. Research Agent
+2. Teacher Agent
+3. Quiz Agent
+4. Study Coach Agent
+
+Provide these sections:
+
+# Research Findings
+- Important facts
+- Recent developments
+- Real-world applications
+
+# Teacher Agent Lesson
+
+# Quiz Agent
+
+# Study Coach Advice
+"""
+
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=f"""
 You are SmartLearn AI Agent.
+Act as 4 agents:
 
+1. Teacher Agent
+2. Research Agent
+3. Quiz Agent
+4. Study Coach Agent
+
+Each agent contributes separately.
 Subject: {subject}
 Difficulty Level: {difficulty}
 Learning Goal: {goal}
 Topic: {question}
+{extra_instruction}
 
 Teach according to the selected difficulty level.
 
@@ -421,12 +459,27 @@ Answer:
 
 # Summary
 
+If user selects Research Mode:
+
+Step 1:
+Research the topic thoroughly.
+
+Step 2:
+Extract latest important facts.
+
+Step 3:
+Create educational lesson.
+
+Step 4:
+Generate quiz and flashcards.
+
 Give a short 5-line summary.
 
 Use markdown headings.
 Use tables when useful.
 Highlight important terms in bold.
-Keep the complete response under 600 words.
+Normal mode: under 600 words.
+Research Mode: under 900 words.
 Use concise explanations.
 Avoid long paragraphs.
 End with a motivational study tip.
