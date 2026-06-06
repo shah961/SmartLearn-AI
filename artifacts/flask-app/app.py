@@ -217,6 +217,41 @@ HTML_HEADER = """
         .content-card th{
             background:#0f172a;
         }
+        #loading{
+            margin-top:20px;
+            text-align:center;
+        }
+
+        .loader{
+            width:60px;
+            height:60px;
+            border:5px solid #334155;
+            border-top:5px solid #38bdf8;
+            border-radius:50%;
+            margin:auto;
+            animation:spin 1s linear infinite;
+        }
+
+        .loading-text{
+            margin-top:15px;
+            color:#38bdf8;
+            font-weight:bold;
+        }
+
+        .loading-sub{
+            margin-top:8px;
+            color:#94a3b8;
+            font-size:0.9rem;
+        }
+
+        @keyframes spin{
+            from{
+                transform:rotate(0deg);
+            }
+            to{
+                transform:rotate(360deg);
+            }
+        }
     </style>
 </head>
 """
@@ -276,10 +311,17 @@ Study Smarter.</p>
     Ask AI Partner
 </button>
                 </form>
-                <p id="loading" style="display:none;">
-🧠 AI is creating your lesson...
-This may take a few seconds.
-</p>
+                <div id="loading" style="display:none;">
+                    <div class="loader"></div>
+
+                    <p class="loading-text">
+                        🧠 AI is creating your personalized lesson...
+                    </p>
+
+                    <p class="loading-sub">
+                        Generating explanation • quiz • flashcards • study plan
+                    </p>
+                </div>
             </div>
         </div>
         <script>
