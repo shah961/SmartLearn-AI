@@ -389,7 +389,15 @@ Include:
 - Intermediate Stage
 - Advanced Stage
 # Teacher Agent Lesson
+# Advanced Knowledge Gap Detection
 
+Identify:
+
+- Missing prerequisites
+- Weak foundational concepts
+- Recommended learning sequence
+
+Explain how to fix each gap.
 # Quiz Agent
 
 # Study Coach Advice
@@ -461,12 +469,42 @@ Keep roadmap concise and actionable.
 
 # 30 Minute Study Plan
 
-
 # Knowledge Gap Analysis
 
-- Common mistakes
-- Difficult concepts
-- Recommended next topics
+Analyze the learner's likely knowledge gaps based on:
+
+- Topic
+- Difficulty Level
+- Learning Goal
+
+Provide:
+
+## Missing Concepts
+
+Concepts the learner should know first.
+
+## Why They Matter
+
+Explain why each concept is important.
+
+## Estimated Learning Time
+
+Approximate time needed to learn missing concepts.
+
+## Fix Plan
+
+Step-by-step plan to close the gaps.
+
+## Common Mistakes
+
+Mistakes learners often make.
+
+## Recommended Next Topics
+
+Topics to study after mastering this topic.
+
+# Study Tips
+
 # Flashcards
 Use proper markdown formatting.
 
@@ -508,14 +546,26 @@ Generate quiz and flashcards.
 
 Give a short 5-line summary.
 
+Knowledge Gap Analysis must be specific to the topic.
+
+Avoid generic advice.
+
 Use markdown headings.
+
 Use tables when useful.
+
 Highlight important terms in bold.
+
 Normal mode: under 600 words.
+
 Research Mode: under 900 words.
+
 Use concise explanations.
+
 Avoid long paragraphs.
+
 End with a motivational study tip.
+
 """
         )
 
