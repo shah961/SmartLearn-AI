@@ -2,6 +2,7 @@ from flask import Flask, request
 from google import genai
 import os
 import markdown
+import re
 
 app = Flask(__name__)
 
@@ -252,6 +253,54 @@ HTML_HEADER = """
                 transform:rotate(360deg);
             }
         }
+        .flashcard {
+            background: transparent;
+            width: 100%;
+            min-height: 220px;
+            perspective: 1000px;
+            margin: 20px 0;
+        }
+.flashcard-inner {
+    position: relative;
+    width: 100%;
+    min-height: 220px;
+    transition: transform 0.7s;
+    transform-style: preserve-3d;
+    cursor: pointer;
+}
+
+.flashcard.flipped .flashcard-inner {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 20px;
+    backface-visibility: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.flashcard-front {
+    background: #1e293b;
+    border: 2px solid #38bdf8;
+    overflow-y: auto;
+    word-break: break-word;
+}
+
+.flashcard-back {
+    background: #0ea5e9;
+    color: white;
+    transform: rotateY(180deg);
+    overflow-y: auto;
+    word-break: break-word;
+}
     </style>
 </head>
 """
@@ -339,251 +388,88 @@ document.querySelector("form").addEventListener("submit", function(){{
     """
 
 
-            
 @app.route("/ask")
 def ask():
+
     question = request.args.get("question")
     subject = request.args.get("subject")
     difficulty = request.args.get("difficulty")
     goal = request.args.get("goal")
 
-    if not question or not question.strip():
-        return """
-        <h1>Error</h1>
-        <p>Please enter a topic.</p>
-        """
-
-    if not subject or not difficulty or not goal:
-        return """
-        <h1>Error</h1>
-        <p>Please complete all fields.</p>
-        """
+    if not question:
+        return "<h1>Please enter a topic.</h1>"
 
     try:
-        extra_instruction = ""
-
-        if goal == "Research Mode":
-            extra_instruction = """
-# Research Agent Mode
-
-Act as:
-
-1. Research Agent
-2. Teacher Agent
-3. Quiz Agent
-4. Study Coach Agent
-
-Provide these sections:
-
-# Research Findings
-- Important facts
-- Recent developments
-- Real-world applications
-# Research Learning Path
-
-Provide a roadmap showing how a learner can
-become proficient in this topic.
-
-Include:
-- Beginner Stage
-- Intermediate Stage
-- Advanced Stage
-# Teacher Agent Lesson
-# Advanced Knowledge Gap Detection
-
-Identify:
-
-- Missing prerequisites
-- Weak foundational concepts
-- Recommended learning sequence
-
-Explain how to fix each gap.
-# Quiz Agent
-
-# Study Coach Advice
-"""
 
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=f"""
 You are SmartLearn AI Agent.
-Act as 4 agents:
 
-1. Teacher Agent
-2. Research Agent
-3. Quiz Agent
-4. Study Coach Agent
-
-Each agent contributes separately.
 Subject: {subject}
-Difficulty Level: {difficulty}
-Learning Goal: {goal}
+Difficulty: {difficulty}
+Goal: {goal}
 Topic: {question}
-{extra_instruction}
 
-Teach according to the selected difficulty level.
-
-Beginner:
-- Very simple language
-- Everyday examples
-
-Intermediate:
-- More details
-- Some technical terms
-
-Advanced:
-- Deep explanation
-- Professional terminology
-
-Provide:
+Create:
 
 # Short Explanation
 
 # Key Points
 
 # Learning Roadmap
-Create a personalized roadmap based on the topic,
-difficulty level and learning goal.
-
-Include:
-
-Day 1:
-What to learn first
-
-Day 3:
-Intermediate concepts
-
-Day 7:
-Practical understanding
-
-Day 14:
-Advanced topics
-
-Day 30:
-Mastery goals
-
-Keep roadmap concise and actionable.
 
 # Quiz Questions
-(4 - 8 questions)
 
 # 30 Minute Study Plan
 
 # Knowledge Gap Analysis
 
-Analyze the learner's likely knowledge gaps based on:
-
-- Topic
-- Difficulty Level
-- Learning Goal
-
-Provide:
-
-## Missing Concepts
-
-Concepts the learner should know first.
-
-## Why They Matter
-
-Explain why each concept is important.
-
-## Estimated Learning Time
-
-Approximate time needed to learn missing concepts.
-
-## Fix Plan
-
-Step-by-step plan to close the gaps.
-
-## Common Mistakes
-
-Mistakes learners often make.
-
-## Recommended Next Topics
-
-Topics to study after mastering this topic.
-
 # Study Tips
 
 # Flashcards
-Use proper markdown formatting.
 
-For flashcards use:
+Generate EXACTLY 5 flashcards.
+
+Format:
 
 Flashcard 1
-
-Question:
-...
-
-Answer:
-...
+Question: ...
+Answer: ...
 
 Flashcard 2
+Question: ...
+Answer: ...
 
-Question:
-...
+Flashcard 3
+Question: ...
+Answer: ...
 
-Answer:
-...
-Flash...
+Flashcard 4
+Question: ...
+Answer: ...
+
+Flashcard 5
+Question: ...
+Answer: ...
+
 # Revision Notes
 
 # Summary
-
-If user selects Research Mode:
-
-Step 1:
-Research the topic thoroughly.
-
-Step 2:
-Extract latest important facts.
-
-Step 3:
-Create educational lesson.
-
-Step 4:
-Generate quiz and flashcards.
-
-Give a short 5-line summary.
-
-Knowledge Gap Analysis must be specific to the topic.
-
-Avoid generic advice.
-
-Use markdown headings.
-
-Use tables when useful.
-
-Highlight important terms in bold.
-
-Normal mode: under 600 words.
-
-Research Mode: under 900 words.
-
-Use concise explanations.
-
-Avoid long paragraphs.
-
-End with a motivational study tip.
-
 """
         )
 
     except Exception as e:
+
         return f"""
         {HTML_HEADER}
         <body>
             <div class="container">
-                <h1>⚠️ Error</h1>
-
+                <h1>Error</h1>
                 <div class="content-card">
-                    <p>Something went wrong while contacting Gemini.</p>
                     <p>{str(e)}</p>
                 </div>
-
-                <a href="/" class="back-link">
-                    ← Try Again
-                </a>
+                <a href="/" class="back-link">Go Back</a>
             </div>
         </body>
         </html>
@@ -591,23 +477,64 @@ End with a motivational study tip.
 
     response_text = getattr(response, "text", "")
 
-    if not response_text or not response_text.strip():
-        return """
-        <h1>Error</h1>
-        <p>No response received from AI.</p>
-        """
+    if not response_text:
+        return "<h1>No response received.</h1>"
+
+    flashcards_html = ""
+
+    clean_response = response_text
+
+    flashcards_match = re.search(
+        r"#+\s*Flashcards(.*?)(?=#+\s*Revision Notes|#+\s*Summary|$)",
+        response_text,
+        re.DOTALL | re.IGNORECASE
+    )
+
+    if flashcards_match:
+
+        flashcard_section = flashcards_match.group(1)
+
+        matches = re.findall(
+            r"Flashcard\s*(\d+)\s*[\r\n]+Question:\s*(.*?)\s*[\r\n]+Answer:\s*(.*?)(?=Flashcard\s*\d+|$)",
+            flashcard_section,
+            re.DOTALL | re.IGNORECASE
+        )
+
+        for num, question, answer in matches:
+
+            flashcards_html += f"""
+            <div class="flashcard" onclick="flipCard(this)">
+                <div class="flashcard-inner">
+
+                    <div class="flashcard-front">
+                        <h3>{question.strip()}</h3>
+                    </div>
+
+                    <div class="flashcard-back">
+                        <p>{answer.strip()}</p>
+                    </div>
+
+                </div>
+            </div>
+            """
+
+        clean_response = clean_response.replace(
+            flashcards_match.group(0),
+            ""
+        )
 
     html_response = markdown.markdown(
-        response_text,
+        clean_response,
         extensions=["extra"]
     )
 
     return f"""
     {HTML_HEADER}
     <body>
+
         <div class="container">
 
-            <h1>SmartLearn AI </h1>
+            <h1>SmartLearn AI</h1>
 
             <p class="subtitle">
                 Subject: {subject} |
@@ -616,10 +543,16 @@ End with a motivational study tip.
             </p>
 
             <div class="content-card" id="studyContent">
-<button onclick="copyContent()" class="pdf-btn">
-📋 Copy Notes
-</button>
+
+                <button onclick="copyContent()" class="pdf-btn">
+                    📋 Copy Notes
+                </button>
+
                 {html_response}
+
+                <h2>Interactive Flashcards</h2>
+
+                {flashcards_html}
 
             </div>
 
@@ -628,8 +561,14 @@ End with a motivational study tip.
             </a>
 
         </div>
-        <script>
-function copyContent() {{
+
+<script>
+
+function flipCard(card){{
+    card.classList.toggle("flipped");
+}}
+
+function copyContent(){{
     const content =
         document.getElementById("studyContent").innerText;
 
@@ -637,10 +576,13 @@ function copyContent() {{
 
     alert("Content copied!");
 }}
+
 </script>
+
     </body>
     </html>
     """
+ 
 
 
 @app.route("/study")
