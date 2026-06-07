@@ -379,7 +379,15 @@ Provide these sections:
 - Important facts
 - Recent developments
 - Real-world applications
+# Research Learning Path
 
+Provide a roadmap showing how a learner can
+become proficient in this topic.
+
+Include:
+- Beginner Stage
+- Intermediate Stage
+- Advanced Stage
 # Teacher Agent Lesson
 
 # Quiz Agent
@@ -425,10 +433,35 @@ Provide:
 
 # Key Points
 
+# Learning Roadmap
+Create a personalized roadmap based on the topic,
+difficulty level and learning goal.
+
+Include:
+
+Day 1:
+What to learn first
+
+Day 3:
+Intermediate concepts
+
+Day 7:
+Practical understanding
+
+Day 14:
+Advanced topics
+
+Day 30:
+Mastery goals
+
+Keep roadmap concise and actionable.
+
 # Quiz Questions
-(3 questions)
+(4 - 8 questions)
 
 # 30 Minute Study Plan
+
+
 # Knowledge Gap Analysis
 
 - Common mistakes
@@ -454,7 +487,7 @@ Question:
 
 Answer:
 ...
-
+Flash...
 # Revision Notes
 
 # Summary
