@@ -138,6 +138,9 @@ HTML_HEADER = """
             margin-top: 20px;
             border: 1px solid #334155;
             line-height: 1.7;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            overflow-x: auto;
         }
 
         .content-card h1, .content-card h2, .content-card h3 {
@@ -207,6 +210,8 @@ HTML_HEADER = """
             width:100%;
             border-collapse:collapse;
             margin:15px 0;
+            display: block;
+            overflow-x: auto;
         }
 
         .content-card th,
@@ -256,7 +261,8 @@ HTML_HEADER = """
         .flashcard {
             background: transparent;
             width: 100%;
-            min-height: 220px;
+            min-height: 250px;
+            margin: 25px 0;
             perspective: 1000px;
             margin: 20px 0;
         }
@@ -278,13 +284,14 @@ HTML_HEADER = """
     position: absolute;
     inset: 0;
     border-radius: 16px;
-    padding: 20px;
+    padding: 25px;
     backface-visibility: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    line-height: 1.6;
 }
 
 .flashcard-front {
@@ -300,6 +307,18 @@ HTML_HEADER = """
     transform: rotateY(180deg);
     overflow-y: auto;
     word-break: break-word;
+}
+.study-coach{
+    background:#0f172a;
+    border:2px solid #38bdf8;
+    border-radius:16px;
+    padding:20px;
+    margin:20px 0;
+}
+
+.study-coach h2,
+.study-coach h3{
+    color:#38bdf8;
 }
     </style>
 </head>
@@ -325,7 +344,7 @@ Study Smarter.</p>
                         placeholder="What do you want to learn today?"
                         required
                         autofocus
-                    >
+                    maxlength="100">
                     <select name="subject" required>
     <option value="" disabled selected>Select Subject</option>
     <option value="General">General</option>
@@ -371,7 +390,7 @@ Research Mode
                     </p>
 
                     <p class="loading-sub">
-                        Generating explanation • quiz • flashcards • study plan
+                        Generating lesson • roadmap • quiz • study coach • flashcards
                     </p>
                 </div>
             </div>
@@ -411,6 +430,34 @@ Difficulty: {difficulty}
 Goal: {goal}
 Topic: {question}
 
+The Study Coach must be personalized using:
+
+- Subject
+- Difficulty Level
+- Learning Goal
+- Topic
+
+If the difficulty is Beginner:
+Use simpler milestones.
+
+If Intermediate:
+Use moderate pace.
+
+If Advanced:
+Use accelerated learning strategy.
+
+If Goal is Exam Preparation:
+Prioritize revision and practice questions.
+
+If Goal is Interview Prep:
+Prioritize practical understanding and common interview questions.
+
+If Goal is Revision:
+Prioritize memory retention and spaced repetition.
+
+If Goal is Research Mode:
+Prioritize deep concepts and further exploration.
+
 Create:
 
 # Short Explanation
@@ -426,6 +473,22 @@ Create:
 # Knowledge Gap Analysis
 
 # Study Tips
+
+# Study Coach
+
+Study Coach must include:
+
+## Today's Focus
+
+## Tomorrow's Focus
+
+## This Week's Plan
+
+## Revision Strategy
+
+## Estimated Mastery Time
+
+## Personalized Recommendations
 
 # Flashcards
 
@@ -478,7 +541,27 @@ Answer: ...
     response_text = getattr(response, "text", "")
 
     if not response_text:
-        return "<h1>No response received.</h1>"
+        return f"""
+    {HTML_HEADER}
+    <body>
+        <div class="container">
+            <h1>SmartLearn AI</h1>
+
+            <div class="content-card">
+                <p>
+                AI could not generate a response.
+                Please try again.
+                </p>
+            </div>
+
+            <a href="/" class="back-link">
+                ← Go Back
+            </a>
+
+        </div>
+    </body>
+    </html>
+    """
 
     flashcards_html = ""
 
@@ -544,7 +627,7 @@ Answer: ...
 
             <div class="content-card" id="studyContent">
 
-                <button onclick="copyContent()" class="pdf-btn">
+                <button onclick="copyContent(this)" class="pdf-btn">
                     📋 Copy Notes
                 </button>
 
@@ -567,15 +650,20 @@ Answer: ...
 function flipCard(card){{
     card.classList.toggle("flipped");
 }}
+function copyContent(btn){{
 
-function copyContent(){{
     const content =
         document.getElementById("studyContent").innerText;
 
     navigator.clipboard.writeText(content);
 
-    alert("Content copied!");
+    btn.innerText = "✅ Copied";
+
+    setTimeout(() => {{
+        btn.innerText = "📋 Copy Notes";
+    }}, 2000);
 }}
+
 
 </script>
 
